@@ -81,3 +81,21 @@ siguen diferenciados. El cambio se verifica ejecutando el Config Server de
 Git de estas propiedades, con la imagen de security, MySQL aislado y secretos
 de prueba externos. Los resultados y commits exactos se registran en el PR de
 integración; los fixtures internos de security no sustituyen esa comprobación.
+
+
+## Contrato de courier
+
+Courier valida JWT con la clave pública externa y no recibe material privado.
+La configuración base conserva JPA validate, Open Session in View desactivado y
+auditoría UTC; rechaza campos JSON desconocidos y estados numéricos; expone solo
+salud agregada y omite detalles internos de error.
+
+El cliente administrativo usa SECURITY_SERVICE_URL y timeouts positivos:
+SECURITY_CONNECT_TIMEOUT (2s por defecto) y SECURITY_READ_TIMEOUT (3s por defecto).
+El puerto es 8081 salvo que el cliente defina COURIER_SERVER_PORT. Las propiedades
+de MySQL y JWT_PUBLIC_KEY_LOCATION continúan sin valores de respaldo sensibles.
+
+Los perfiles dev/prod conservan sus marcadores courier-service-dev/prod, logging
+y show-sql. La comprobación de integración registra la revisión Git exacta del
+servidor y de este repositorio y arranca courier con ambos ambientes, secretos
+efímeros y recursos aislados; las pruebas locales no sustituyen ese ensayo.
