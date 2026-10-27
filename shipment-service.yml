@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: shipment-service
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+server:
+  port: 8080
+clients:
+  courier:
+    base-url: ${COURIER_SERVICE_URL:http://localhost:8081}
+    connect-timeout: 2s
+    read-timeout: 3s
+  security:
+    base-url: ${SECURITY_SERVICE_URL:http://localhost:8082}
+logitrack:
+  security:
+    issuer: logitrack-security
+    audience: logitrack-api
+    access-token-ttl: 15m
+    clock-skew: 60s
+    public-key-location: ${JWT_PUBLIC_KEY_LOCATION}
