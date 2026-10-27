@@ -1,29 +1,5 @@
 # configserver-ms
 
-Componente de [LogiTrack Atom](https://github.com/LogiTrack-Atom) para el Sprint 02.
-
-## Responsabilidad
-
-Archivos de configuración de shipment-service, courier-service y security-service por ambiente.
-
-Responsable principal: [@DiazGab](https://github.com/DiazGab).
-
-## Estado
-
-Repositorio preparado para iniciar el Sprint 02. La implementación y sus verificaciones se realizarán mediante las issues correspondientes.
-
-Este repositorio contiene configuración; no es una aplicación Java ni requiere una imagen Docker propia.
-
-## Flujo de trabajo
-
-- Crear las issues de este componente en este repositorio y agregarlas al Project común **LogiTrack Atom** de la organización.
-- Trabajar en ramas por tarea y abrir pull requests hacia `develop`.
-- Integrar y preparar la entrega desde `develop`.
-- Enlazar las tareas relacionadas cuando haya dependencias entre repositorios.
-
-El Docker Compose general y la documentación de integración se mantienen en [shipment-service](https://github.com/LogiTrack-Atom/shipment-service).
-# configserver-ms
-
 Repositorio de propiedades que lee `configserver` (Spring Cloud Config Server).
 Contiene solo archivos de configuración, sin código. No incluye credenciales,
 claves privadas ni tokens.
@@ -66,8 +42,11 @@ Config Server no recibe ni publica los valores.
 | DB_URL                   | shipment, courier, security       | Ninguno                     |
 | DB_USERNAME              | shipment, courier, security       | Ninguno                     |
 | DB_PASSWORD              | shipment, courier, security       | Ninguno                     |
-| JWT_PUBLIC_KEY_LOCATION  | shipment, courier                 | Ninguno                     |
+| JWT_PUBLIC_KEY_LOCATION  | shipment, courier, security       | Ninguno                     |
 | JWT_PRIVATE_KEY_LOCATION | security                          | Ninguno                     |
+| BOOTSTRAP_ADMIN_ENABLED  | security                          | false                       |
+| BOOTSTRAP_ADMIN_EMAIL    | security, si bootstrap está activo | Vacío                       |
+| BOOTSTRAP_ADMIN_PASSWORD | security, si bootstrap está activo | Vacío                       |
 | COURIER_SERVICE_URL      | shipment                          | http://localhost:8081       |
 | SECURITY_SERVICE_URL     | shipment, courier                 | http://localhost:8082       |
 
@@ -78,3 +57,27 @@ contenedores deben definirse con el nombre del servicio en Docker Compose.
 
 - `develop` es la etiqueta de trabajo (`CONFIG_LABEL`, por defecto `develop`).
 - Para la entrega se fijará una etiqueta Git explícita, que se registrará aquí.
+
+## Contrato de security
+
+Security necesita ambas rutas de claves RSA: firma con la privada y valida los
+JWT con la pública. Las dos variables contienen URI `file:` de archivos externos;
+las claves no se guardan en este repositorio ni se entregan a Config Server.
+La privada se monta exclusivamente en security.
+
+El bootstrap del primer administrador está desactivado por defecto. Si se activa,
+el servicio exige email y contraseña válidos, recibidos únicamente por su entorno.
+Los valores vacíos no habilitan una cuenta ni constituyen credenciales de respaldo.
+El registro público continúa creando exclusivamente usuarios CLIENTE.
+
+La configuración base rechaza propiedades JSON desconocidas y roles numéricos
+con Jackson 3, conserva `ddl-auto=validate`, desactiva Open Session in View y limita
+Actuator a salud agregada sin detalles ni componentes. Los errores no exponen
+mensajes internos, trazas ni errores de binding del framework.
+
+Dev y prod usan el mismo puerto 8082 y tiempos JWT; sus marcadores y logging
+siguen diferenciados. El cambio se verifica ejecutando el Config Server de
+[configserver](https://github.com/LogiTrack-Atom/configserver) contra los commits
+Git de estas propiedades, con la imagen de security, MySQL aislado y secretos
+de prueba externos. Los resultados y commits exactos se registran en el PR de
+integración; los fixtures internos de security no sustituyen esa comprobación.

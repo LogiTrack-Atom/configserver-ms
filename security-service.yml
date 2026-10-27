@@ -6,10 +6,30 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+    datatype:
+      enum:
+        fail-on-numbers-for-enums: true
 server:
   port: 8082
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
 logitrack:
   security:
     issuer: logitrack-security
@@ -17,3 +37,8 @@ logitrack:
     access-token-ttl: 15m
     clock-skew: 60s
     private-key-location: ${JWT_PRIVATE_KEY_LOCATION}
+    public-key-location: ${JWT_PUBLIC_KEY_LOCATION}
+  bootstrap-admin:
+    enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
