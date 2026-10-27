@@ -56,7 +56,11 @@ contenedores deben definirse con el nombre del servicio en Docker Compose.
 ## Label
 
 - `develop` es la etiqueta de trabajo (`CONFIG_LABEL`, por defecto `develop`).
-- Para la entrega se fijará una etiqueta Git explícita, que se registrará aquí.
+- La entrega Sprint02 usa el tag anotado `sprint02-1.0.0`, que apunta al commit
+  `b40bd4d0eecd5eff6e5ef0a7b23d0a106a39ba13`. El Compose fija este commit
+  directamente mediante `CONFIG_LABEL`; no sigue cambios posteriores de develop.
+- El tag identifica las propiedades verificadas de los tres servicios; no contiene
+  artefactos Java ni necesita una imagen Docker propia.
 
 ## Contrato de security
 
@@ -99,3 +103,27 @@ Los perfiles dev/prod conservan sus marcadores courier-service-dev/prod, logging
 y show-sql. La comprobación de integración registra la revisión Git exacta del
 servidor y de este repositorio y arranca courier con ambos ambientes, secretos
 efímeros y recursos aislados; las pruebas locales no sustituyen ese ensayo.
+
+## Comprobación de la entrega
+
+Con Config Server disponible en loopback:
+
+```sh
+for app in shipment-service courier-service security-service; do
+  for perfil in dev prod; do
+    curl --fail "http://localhost:8085/$app/$perfil/sprint02-1.0.0"
+  done
+done
+```
+
+`version` debe coincidir con el commit indicado; las fuentes deben incluir el YAML
+base y el de perfil, y el marcador debe ser `{app}-{perfil}`. La fuente de perfil
+tiene precedencia. Las contraseñas se mantienen como `${DB_PASSWORD}` en las
+respuestas: cada aplicación las resuelve con su entorno, sin entregarlas al servidor.
+Una aplicación inexistente devuelve 404 con la configuración de servidor de entrega;
+un perfil mal escrito puede recuperar solo la base y por eso el cliente exige además
+el marcador correspondiente. No basta con obtener HTTP 200.
+
+Las comprobaciones dev/prod de consumo real están registradas en las issues de
+Config Client de cada servicio. El ensayo final y las referencias de imágenes se
+registran en [shipment-service#29](https://github.com/LogiTrack-Atom/shipment-service/issues/29).
