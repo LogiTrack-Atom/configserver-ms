@@ -46,3 +46,9 @@ management:
     health:
       show-details: never
       show-components: never
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8065/eureka/}
+  instance:
+    prefer-ip-address: true
