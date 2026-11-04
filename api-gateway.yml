@@ -12,18 +12,21 @@ spring:
                 - Path=/applications/apisecurity/**
               filters:
                 - StripPrefix=2
+                - RewriteResponseHeader=Location, ^/api/v1/(.*)$, /applications/apisecurity/api/v1/$1
             - id: courier-service
               uri: lb://COURIER-SERVICE
               predicates:
                 - Path=/applications/apicourier/**
               filters:
                 - StripPrefix=2
+                - RewriteResponseHeader=Location, ^/api/v1/(.*)$, /applications/apicourier/api/v1/$1
             - id: shipment-service
               uri: lb://SHIPMENT-SERVICE
               predicates:
                 - Path=/applications/apishipment/**
               filters:
                 - StripPrefix=2
+                - RewriteResponseHeader=Location, ^/api/v1/(.*)$, /applications/apishipment/api/v1/$1
 server:
   port: ${GATEWAY_SERVER_PORT:8066}
 eureka:
