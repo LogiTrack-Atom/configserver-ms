@@ -1,0 +1,7 @@
+logging:
+  level:
+    root: WARN
+    com.logitrack_atom: INFO
+logitrack:
+  config:
+    marker: api-gateway-prod

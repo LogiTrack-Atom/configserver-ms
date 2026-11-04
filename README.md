@@ -1,29 +1,5 @@
 # configserver-ms
 
-Componente de [LogiTrack Atom](https://github.com/LogiTrack-Atom) para el Sprint 02.
-
-## Responsabilidad
-
-Archivos de configuración de shipment-service, courier-service y security-service por ambiente.
-
-Responsable principal: [@DiazGab](https://github.com/DiazGab).
-
-## Estado
-
-Repositorio preparado para iniciar el Sprint 02. La implementación y sus verificaciones se realizarán mediante las issues correspondientes.
-
-Este repositorio contiene configuración; no es una aplicación Java ni requiere una imagen Docker propia.
-
-## Flujo de trabajo
-
-- Crear las issues de este componente en este repositorio y agregarlas al Project común **LogiTrack Atom** de la organización.
-- Trabajar en ramas por tarea y abrir pull requests hacia `develop`.
-- Integrar y preparar la entrega desde `develop`.
-- Enlazar las tareas relacionadas cuando haya dependencias entre repositorios.
-
-El Docker Compose general y la documentación de integración se mantienen en [shipment-service](https://github.com/LogiTrack-Atom/shipment-service).
-# configserver-ms
-
 Repositorio de propiedades que lee `configserver` (Spring Cloud Config Server).
 Contiene solo archivos de configuración, sin código. No incluye credenciales,
 claves privadas ni tokens.
@@ -66,8 +42,11 @@ Config Server no recibe ni publica los valores.
 | DB_URL                   | shipment, courier, security       | Ninguno                     |
 | DB_USERNAME              | shipment, courier, security       | Ninguno                     |
 | DB_PASSWORD              | shipment, courier, security       | Ninguno                     |
-| JWT_PUBLIC_KEY_LOCATION  | shipment, courier                 | Ninguno                     |
+| JWT_PUBLIC_KEY_LOCATION  | shipment, courier, security       | Ninguno                     |
 | JWT_PRIVATE_KEY_LOCATION | security                          | Ninguno                     |
+| BOOTSTRAP_ADMIN_ENABLED  | security                          | false                       |
+| BOOTSTRAP_ADMIN_EMAIL    | security, si bootstrap está activo | Vacío                       |
+| BOOTSTRAP_ADMIN_PASSWORD | security, si bootstrap está activo | Vacío                       |
 | COURIER_SERVICE_URL      | shipment                          | http://localhost:8081       |
 | SECURITY_SERVICE_URL     | shipment, courier                 | http://localhost:8082       |
 
@@ -77,4 +56,74 @@ contenedores deben definirse con el nombre del servicio en Docker Compose.
 ## Label
 
 - `develop` es la etiqueta de trabajo (`CONFIG_LABEL`, por defecto `develop`).
-- Para la entrega se fijará una etiqueta Git explícita, que se registrará aquí.
+- La entrega Sprint02 usa el tag anotado `sprint02-1.0.0`, que apunta al commit
+  `b40bd4d0eecd5eff6e5ef0a7b23d0a106a39ba13`. El Compose fija este commit
+  directamente mediante `CONFIG_LABEL`; no sigue cambios posteriores de develop.
+- El tag identifica las propiedades verificadas de los tres servicios; no contiene
+  artefactos Java ni necesita una imagen Docker propia.
+
+## Contrato de security
+
+Security necesita ambas rutas de claves RSA: firma con la privada y valida los
+JWT con la pública. Las dos variables contienen URI `file:` de archivos externos;
+las claves no se guardan en este repositorio ni se entregan a Config Server.
+La privada se monta exclusivamente en security.
+
+El bootstrap del primer administrador está desactivado por defecto. Si se activa,
+el servicio exige email y contraseña válidos, recibidos únicamente por su entorno.
+Los valores vacíos no habilitan una cuenta ni constituyen credenciales de respaldo.
+El registro público continúa creando exclusivamente usuarios CLIENTE.
+
+La configuración base rechaza propiedades JSON desconocidas y roles numéricos
+con Jackson 3, conserva `ddl-auto=validate`, desactiva Open Session in View y limita
+Actuator a salud agregada sin detalles ni componentes. Los errores no exponen
+mensajes internos, trazas ni errores de binding del framework.
+
+Dev y prod usan el mismo puerto 8082 y tiempos JWT; sus marcadores y logging
+siguen diferenciados. El cambio se verifica ejecutando el Config Server de
+[configserver](https://github.com/LogiTrack-Atom/configserver) contra los commits
+Git de estas propiedades, con la imagen de security, MySQL aislado y secretos
+de prueba externos. Los resultados y commits exactos se registran en el PR de
+integración; los fixtures internos de security no sustituyen esa comprobación.
+
+
+## Contrato de courier
+
+Courier valida JWT con la clave pública externa y no recibe material privado.
+La configuración base conserva JPA validate, Open Session in View desactivado y
+auditoría UTC; rechaza campos JSON desconocidos y estados numéricos; expone solo
+salud agregada y omite detalles internos de error.
+
+El cliente administrativo usa SECURITY_SERVICE_URL y timeouts positivos:
+SECURITY_CONNECT_TIMEOUT (2s por defecto) y SECURITY_READ_TIMEOUT (3s por defecto).
+El puerto es 8081 salvo que el cliente defina COURIER_SERVER_PORT. Las propiedades
+de MySQL y JWT_PUBLIC_KEY_LOCATION continúan sin valores de respaldo sensibles.
+
+Los perfiles dev/prod conservan sus marcadores courier-service-dev/prod, logging
+y show-sql. La comprobación de integración registra la revisión Git exacta del
+servidor y de este repositorio y arranca courier con ambos ambientes, secretos
+efímeros y recursos aislados; las pruebas locales no sustituyen ese ensayo.
+
+## Comprobación de la entrega
+
+Con Config Server disponible en loopback:
+
+```sh
+for app in shipment-service courier-service security-service; do
+  for perfil in dev prod; do
+    curl --fail "http://localhost:8085/$app/$perfil/sprint02-1.0.0"
+  done
+done
+```
+
+`version` debe coincidir con el commit indicado; las fuentes deben incluir el YAML
+base y el de perfil, y el marcador debe ser `{app}-{perfil}`. La fuente de perfil
+tiene precedencia. Las contraseñas se mantienen como `${DB_PASSWORD}` en las
+respuestas: cada aplicación las resuelve con su entorno, sin entregarlas al servidor.
+Una aplicación inexistente devuelve 404 con la configuración de servidor de entrega;
+un perfil mal escrito puede recuperar solo la base y por eso el cliente exige además
+el marcador correspondiente. No basta con obtener HTTP 200.
+
+Las comprobaciones dev/prod de consumo real están registradas en las issues de
+Config Client de cada servicio. El ensayo final y las referencias de imágenes se
+registran en [shipment-service#29](https://github.com/LogiTrack-Atom/shipment-service/issues/29).

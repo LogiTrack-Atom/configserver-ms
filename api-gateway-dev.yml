@@ -1,0 +1,7 @@
+logging:
+  level:
+    root: INFO
+    com.logitrack_atom: DEBUG
+logitrack:
+  config:
+    marker: api-gateway-dev
